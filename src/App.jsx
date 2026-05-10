@@ -525,9 +525,6 @@ export default function App() {
 // ── Sub-components ──
 
 function Header({ t, lang, setLang }) {
-  const [open, setOpen] = useState(false);
-  const current = LANGS.find(l => l.code === lang);
-
   return (
     <header style={s.header}>
       <div style={s.logoArea}>
@@ -549,27 +546,13 @@ function Header({ t, lang, setLang }) {
           <div style={s.logoSub}>{t.brandSub}</div>
         </div>
       </div>
-
-      {/* Dropdown language switcher */}
-      <div style={{ position: "relative" }}>
-        <button
-          onClick={() => setOpen(o => !o)}
-          style={s.langDropBtn}
-        >
-          {current.label}
-          <span style={{ marginLeft: 6, fontSize: 10, opacity: 0.7 }}>{open ? "▲" : "▼"}</span>
-        </button>
-        {open && (
-          <div style={s.langDropMenu}>
-            {LANGS.filter(l => l.code !== lang).map(l => (
-              <button key={l.code}
-                onClick={() => { setLang(l.code); setOpen(false); }}
-                style={s.langDropItem}>
-                {l.label}
-              </button>
-            ))}
-          </div>
-        )}
+      <div style={s.langSwitcher}>
+        {LANGS.map(l => (
+          <button key={l.code} onClick={() => setLang(l.code)}
+            style={{ ...s.langBtn, background: lang === l.code ? "#c9a96e" : "transparent", color: lang === l.code ? "#1a1a2e" : "#aaa", fontWeight: lang === l.code ? 700 : 400 }}>
+            {l.label}
+          </button>
+        ))}
       </div>
     </header>
   );
@@ -602,9 +585,8 @@ const s = {
   logoArea: { display:"flex", alignItems:"center", gap:10 },
   logoName: { color:"#c9a96e", fontWeight:700, fontSize:17, letterSpacing:0.5 },
   logoSub: { color:"#888", fontSize:10, letterSpacing:1.2, textTransform:"uppercase" },
-  langDropBtn: { display:"flex", alignItems:"center", background:"#c9a96e", border:"none", borderRadius:20, padding:"7px 14px", fontSize:13, fontWeight:700, color:"#1a1a2e", cursor:"pointer", whiteSpace:"nowrap" },
-  langDropMenu: { position:"absolute", top:"calc(100% + 8px)", right:0, background:"#16213e", borderRadius:12, overflow:"hidden", boxShadow:"0 8px 24px #0006", zIndex:999, minWidth:110 },
-  langDropItem: { display:"block", width:"100%", padding:"10px 16px", background:"transparent", border:"none", color:"#fff", fontSize:13, fontWeight:500, cursor:"pointer", textAlign:"left" },
+  langSwitcher: { display:"flex", gap:4, background:"#ffffff11", borderRadius:20, padding:"3px" },
+  langBtn: { border:"none", borderRadius:16, padding:"4px 10px", fontSize:11, cursor:"pointer", transition:"all .2s" },
   hero: { background:"linear-gradient(135deg,#1a1a2e 0%,#0f3460 100%)", padding:"36px 24px 28px", textAlign:"center" },
   heroTitle: { color:"#fff", fontSize:22, margin:"0 0 8px", lineHeight:1.4, whiteSpace:"pre-line" },
   heroSub: { color:"#c9a96e", fontSize:13, margin:0, letterSpacing:1 },
@@ -670,4 +652,3 @@ const s = {
   contactLink: { color:"#fff", textDecoration:"none", fontSize:14, fontWeight:500 },
   footerNote: { color:"#666", fontSize:11, letterSpacing:0.5 },
 };
-
