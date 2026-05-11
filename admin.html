@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Topchauffeur — Tableau de bord</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Georgia', serif; background: #f7f4ef; min-height: 100vh; }
+
+    /* LOGIN */
+    #login-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: linear-gradient(135deg, #1a1a2e, #0f3460);
+    }
+    .login-card {
+      background: #fff; border-radius: 20px; padding: 40px 32px;
+      width: 340px; text-align: center; box-shadow: 0 8px 40px #0005;
+    }
+    .login-logo { font-size: 40px; margin-bottom: 8px; }
+    .login-title { font-size: 22px; color: #1a1a2e; margin-bottom: 4px; }
+    .login-sub { font-size: 12px; color: #aaa; margin-bottom: 28px; letter-spacing: 1px; }
+    .login-input {
+      width: 100%; border: 1.5px solid #e0d8cc; border-radius: 10px;
+      padding: 12px 16px; font-size: 16px; margin-bottom: 16px;
+      outline: none; background: #fdfaf6; font-family: inherit; text-align: center;
+    }
+    .login-btn {
+      width: 100%; background: linear-gradient(135deg, #1a1a2e, #0f3460);
+      color: #fff; border: none; border-radius: 12px; padding: 14px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+    }
+    .login-error { color: #e55; font-size: 13px; margin-top: 10px; }
+
+    /* DASHBOARD */
+    #dashboard { display: none; }
+    .header {
+      background: #1a1a2e; padding: 14px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .header-logo { display: flex; align-items: center; gap: 10px; }
+    .header-logo-name { color: #c9a96e; font-weight: 700; font-size: 17px; }
+    .header-logo-sub { color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    .logout-btn {
+      background: #c9a96e22; border: 1px solid #c9a96e55; color: #c9a96e;
+      border-radius: 20px; padding: 6px 14px; font-size: 12px; cursor: pointer;
+    }
+
+    /* STATS */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 12px; padding: 16px;
+    }
+    .stat-card {
+      background: #fff; border-radius: 14px; padding: 16px;
+      box-shadow: 0 2px 12px #0001; text-align: center;
+    }
+    .stat-icon { font-size: 24px; margin-bottom: 6px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: #1a1a2e; }
+    .stat-label { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+    /* FILTERS */
+    .filters {
+      padding: 0 16px 12px;
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 6px 14px; border-radius: 20px; border: 1.5px solid #e0d8cc;
+      background: #fff; font-size: 12px; cursor: pointer; font-family: inherit;
+      transition: all .2s;
+    }
+    .filter-btn.active {
+      background: #1a1a2e; color: #fff; border-color: #1a1a2e;
+    }
+
+    /* RESERVATIONS */
+    .section-title {
+      padding: 0 16px 10px;
+      font-size: 16px; font-weight: 700; color: #1a1a2e;
+    }
+    .reservations { padding: 0 16px 24px; }
+    .res-card {
+      background: #fff; border-radius: 14px; padding: 16px;
+      margin-bottom: 12px; box-shadow: 0 2px 12px #0001;
+      border-left: 4px solid #e0d8cc;
+    }
+    .res-card.pending  { border-left-color: #f59e0b; }
+    .res-card.confirmed { border-left-color: #22c55e; }
+    .res-card.cancelled { border-left-color: #ef4444; }
+
+    .res-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .res-ref { font-weight: 700; color: #1a1a2e; font-size: 14px; }
+    .res-status {
+      font-size: 11px; font-weight: 700; padding: 3px 10px;
+      border-radius: 20px; text-transform: uppercase;
+    }
+    .status-pending  { background: #fef3c7; color: #d97706; }
+    .status-confirmed { background: #dcfce7; color: #16a34a; }
+    .status-cancelled { background: #fee2e2; color: #dc2626; }
+
+    .res-row { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-bottom: 5px; }
+    .res-label { color: #999; }
+    .res-val { font-weight: 500; text-align: right; max-width: 60%; word-break: break-word; }
+
+    .res-price {
+      font-size: 22px; font-weight: 700; color: #c9a96e;
+      text-align: right; margin: 8px 0 10px;
+    }
+
+    .res-actions { display: flex; gap: 8px; }
+    .btn-confirm {
+      flex: 1; background: #22c55e; color: #fff; border: none;
+      border-radius: 10px; padding: 10px; font-size: 13px;
+      font-weight: 700; cursor: pointer;
+    }
+    .btn-cancel {
+      flex: 1; background: #ef4444; color: #fff; border: none;
+      border-radius: 10px; padding: 10px; font-size: 13px;
+      font-weight: 700; cursor: pointer;
+    }
+    .btn-call {
+      background: #1a1a2e; color: #fff; border: none;
+      border-radius: 10px; padding: 10px 14px; font-size: 13px;
+      font-weight: 700; cursor: pointer; text-decoration: none;
+      display: flex; align-items: center;
+    }
+
+    .empty-state {
+      text-align: center; padding: 40px 20px; color: #aaa;
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+    .refresh-btn {
+      display: block; margin: 0 16px 16px;
+      background: #f0ece4; border: none; border-radius: 10px;
+      padding: 10px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: inherit; width: calc(100% - 32px);
+    }
+
+    .loading { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🚖</div>
+    <div class="login-title">Topchauffeur</div>
+    <div class="login-sub">TABLEAU DE BORD</div>
+    <input class="login-input" type="password" id="pwd-input" placeholder="Mot de passe" onkeydown="if(event.key==='Enter') login()" />
+    <button class="login-btn" onclick="login()">🔓 Connexion</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="header">
+    <div class="header-logo">
+      <span style="font-size:28px">🚖</span>
+      <div>
+        <div class="header-logo-name">Topchauffeur</div>
+        <div class="header-logo-sub">Tableau de bord</div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="logout()">🔒 Déconnexion</button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📋</div>
+      <div class="stat-value" id="stat-total">—</div>
+      <div class="stat-label">Total réservations</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-value" id="stat-pending">—</div>
+      <div class="stat-label">En attente</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-value" id="stat-confirmed">—</div>
+      <div class="stat-label">Confirmées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💶</div>
+      <div class="stat-value" id="stat-revenue">—</div>
+      <div class="stat-label">Chiffre d'affaires</div>
+    </div>
+  </div>
+
+  <!-- REFRESH -->
+  <button class="refresh-btn" onclick="loadReservations()">🔄 Actualiser</button>
+
+  <!-- FILTERS -->
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter('all', this)">Toutes</button>
+    <button class="filter-btn" onclick="setFilter('pending', this)">⏳ En attente</button>
+    <button class="filter-btn" onclick="setFilter('confirmed', this)">✅ Confirmées</button>
+    <button class="filter-btn" onclick="setFilter('cancelled', this)">❌ Annulées</button>
+  </div>
+
+  <div class="section-title">Réservations</div>
+  <div class="reservations" id="reservations-list">
+    <div class="loading">⏳ Chargement...</div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://hhdlhwrlbgcbuuwkejph.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoZGxod3JsYmdjYnV1d2tlanBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDczNjYsImV4cCI6MjA5Mzk4MzM2Nn0.4kPEUwd_BT-yOFx2U5y8c0hi-wMmyeo1-VUdPKWGp4Q";
+  const ADMIN_PASSWORD = "topchauffeur2026";
+
+  let allReservations = [];
+  let currentFilter = "all";
+
+  function login() {
+    const pwd = document.getElementById("pwd-input").value;
+    if (pwd === ADMIN_PASSWORD) {
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+      loadReservations();
+    } else {
+      document.getElementById("login-error").textContent = "❌ Mot de passe incorrect";
+    }
+  }
+
+  function logout() {
+    document.getElementById("login-screen").style.display = "flex";
+    document.getElementById("dashboard").style.display = "none";
+    document.getElementById("pwd-input").value = "";
+  }
+
+  async function loadReservations() {
+    document.getElementById("reservations-list").innerHTML = '<div class="loading">⏳ Chargement...</div>';
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/reservations?order=id.desc`, {
+        headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+      });
+      allReservations = await r.json();
+      updateStats();
+      renderReservations();
+    } catch {
+      document.getElementById("reservations-list").innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Erreur de chargement</p></div>';
+    }
+  }
+
+  function updateStats() {
+    const total = allReservations.length;
+    const pending = allReservations.filter(r => r.status === "pending").length;
+    const confirmed = allReservations.filter(r => r.status === "confirmed").length;
+    const revenue = allReservations
+      .filter(r => r.status === "confirmed")
+      .reduce((sum, r) => sum + (parseInt(r.price) || 0), 0);
+
+    document.getElementById("stat-total").textContent = total;
+    document.getElementById("stat-pending").textContent = pending;
+    document.getElementById("stat-confirmed").textContent = confirmed;
+    document.getElementById("stat-revenue").textContent = revenue + "€";
+  }
+
+  function setFilter(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    renderReservations();
+  }
+
+  function renderReservations() {
+    const list = currentFilter === "all"
+      ? allReservations
+      : allReservations.filter(r => r.status === currentFilter);
+
+    if (list.length === 0) {
+      document.getElementById("reservations-list").innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>Aucune réservation</p>
+        </div>`;
+      return;
+    }
+
+    document.getElementById("reservations-list").innerHTML = list.map(r => `
+      <div class="res-card ${r.status}" id="card-${r.id}">
+        <div class="res-header">
+          <div class="res-ref">#TC${String(r.id).padStart(5,"0")}</div>
+          <div class="res-status status-${r.status}">
+            ${r.status === "pending" ? "⏳ En attente" : r.status === "confirmed" ? "✅ Confirmée" : "❌ Annulée"}
+          </div>
+        </div>
+        <div class="res-row"><span class="res-label">📍 Départ</span><span class="res-val">${r.from_address || "—"}</span></div>
+        <div class="res-row"><span class="res-label">🏁 Arrivée</span><span class="res-val">${r.to_address || "—"}</span></div>
+        <div class="res-row"><span class="res-label">📅 Date</span><span class="res-val">${r.date || "—"} à ${r.time || "—"}</span></div>
+        <div class="res-row"><span class="res-label">👤 Client</span><span class="res-val">${r.name || "—"}</span></div>
+        <div class="res-row"><span class="res-label">👥 Passagers</span><span class="res-val">${r.passengers || 1}</span></div>
+        <div class="res-row"><span class="res-label">💳 Paiement</span><span class="res-val">${r.pay_method || "—"}</span></div>
+        ${r.note ? `<div class="res-row"><span class="res-label">📝 Note</span><span class="res-val">${r.note}</span></div>` : ""}
+        <div class="res-price">${r.price || "—"}€</div>
+        <div class="res-actions">
+          <a class="btn-call" href="tel:${r.phone}">📞</a>
+          ${r.status === "pending" ? `
+            <button class="btn-confirm" onclick="updateStatus(${r.id}, 'confirmed')">✅ Confirmer</button>
+            <button class="btn-cancel" onclick="updateStatus(${r.id}, 'cancelled')">❌ Annuler</button>
+          ` : `
+            <button class="btn-confirm" style="background:#888" onclick="updateStatus(${r.id}, 'pending')">↩ Remettre en attente</button>
+          `}
+        </div>
+      </div>
+    `).join("");
+  }
+
+  async function updateStatus(id, status) {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({ status })
+      });
+      await loadReservations();
+    } catch {
+      alert("Erreur lors de la mise à jour");
+    }
+  }
+</script>
+</body>
+</html>
