@@ -1,4 +1,7 @@
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useState, useEffect } from "react";
+const stripePromise = loadStripe('pk_live_51Hr8g0DPXgS2KWvvsF3XpDycIRspUcAdVNwrHNNhIQwKvu9B9uuu21GRe3es8ruk7LIGGLAIaWAxHKYE4aTl6GB700lZF9eilU');
 
 // ── SUPABASE CONFIG ──
 const SUPABASE_URL = "https://hhdlhwrlbgcbuuwkejph.supabase.co";
@@ -488,7 +491,14 @@ function AdminDashboard() {
     </div>
   );
 }
-export default function App() {
+function AppWrapper() {
+  return (
+    <Elements stripe={stripePromise}>
+      <App />
+    </Elements>
+  );
+}
+function App() {
   // ── ADMIN ROUTING ──
   if (window.location.pathname === "/admin") return <AdminDashboard />;
 
@@ -513,7 +523,7 @@ export default function App() {
   const [selectedCrypto, setSelectedCrypto] = useState(null);
   const [pricing, setPricing] = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);const [stripePaymentIntentId, setStripePaymentIntentId] = useState(null);
   const [bookingRef] = useState("#TC" + Math.floor(Math.random() * 90000 + 10000));
   const today = new Date().toISOString().split("T")[0];
 
@@ -702,22 +712,15 @@ export default function App() {
 
           {/* Card */}
           {payMethod === "card" && (
-            <div style={{background:"#fdfaf6",border:"1.5px solid #e8d9c0",borderRadius:12,padding:20,textAlign:"center",marginBottom:16}}>
-              <div style={{fontSize:32,marginBottom:8}}>💳</div>
-              <p style={{fontSize:14,color:"#555",marginBottom:16}}>Vous serez redirigé vers la page de paiement sécurisé Stripe</p>
-              <div style={{fontSize:22,fontWeight:700,color:"#c9a96e",marginBottom:16}}>{pricing?.price}€</div>
-              <a
-                href={getStripeLink(from, to)}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{display:"block",background:"linear-gradient(135deg,#635bff,#4f46e5)",color:"#fff",borderRadius:12,padding:"14px",fontSize:15,fontWeight:700,textDecoration:"none"}}
-              >
-                💳 Payer {pricing?.price}€ avec Stripe
-              </a>
-              <div style={{fontSize:11,color:"#16a34a",marginTop:10,fontWeight:600}}>🔒 Paiement 100% sécurisé — Stripe</div>
-            </div>
-          )}
-
+  <StripePaymentForm 
+    amount={pricing?.price} 
+    from={from} 
+    to={to}
+    onSuccess={(paymentIntentId) => {
+      setStripePaymentIntentId(paymentIntentId);
+    }}
+  />
+)}
           {/* Cash */}
           {payMethod === "cash" && <div style={s.cashNote}>{t.cashNote}</div>}
 
@@ -929,9 +932,62 @@ const s = {
   smsNote: { fontSize:12, color:"#888", marginBottom:20 },
   newBtn: { background:"linear-gradient(135deg,#1a1a2e,#0f3460)", color:"#fff", border:"none", borderRadius:12, padding:"13px 28px", fontSize:14, fontWeight:700, cursor:"pointer" },
   contactFooter: { background:"#1a1a2e", padding:"28px 24px 20px", textAlign:"center", marginTop:32 },
-  contactTitle: { color:"#c9a96e", fontSize:14, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:14 },
-  contactRow: { display:"flex", justifyContent:"center", gap:24, flexWrap:"wrap", marginBottom:16 },
-  contactLink: { color:"#fff", textDecoration:"none", fontSize:14, fontWeight:500 },
-  footerNote: { color:"#666", fontSize:11, letterSpacing:0.5 },
+ contactTitle: { color:"#c9a96e", fontSize:14, fontWeight:700, letterSpacing:1, textTransform:"uppercase" },
 };
 
+function StripePaymentForm({amount, from, to, onSuccess }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [paid, setPaid] = useState(false);
+
+  async function handlePay() {
+    if (!stripe || !elements) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, from, to })
+      });
+      const { clientSecret, paymentIntentId } = await res.json();
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card: elements.getElement(CardElement) }
+      });
+      if (result.error) {
+        setError(result.error.message);
+      } else {
+        setPaid(true);
+        onSuccess(paymentIntentId);
+      }
+    } catch (e) {
+      setError("Erreur de connexion");
+    }
+    setLoading(false);
+  }
+
+  if (paid) return (
+    <div style={{background:"#dcfce7",border:"1px solid #86efac",borderRadius:12,padding:16,textAlign:"center",marginBottom:16}}>
+      <div style={{fontSize:24}}>✅</div>
+      <p style={{color:"#16a34a",fontWeight:700}}>Paiement autorisé — {amount}€</p>
+      <p style={{color:"#166534",fontSize:12}}>Le montant sera prélevé après confirmation du chauffeur</p>
+    </div>
+  );
+
+  return (
+    <div style={{background:"#fdfaf6",border:"1.5px solid #e8d9c0",borderRadius:12,padding:20,marginBottom:16}}>
+      <div style={{fontSize:13,color:"#555",marginBottom:12}}>💳 Entrez vos coordonnées bancaires</div>
+      <div style={{border:"1.5px solid #e0d8cc",borderRadius:10,padding:"12px 14px",background:"#fff",marginBottom:12}}>
+        <CardElement options={{style:{base:{fontSize:"15px",color:"#1a1a2e"}}}} />
+      </div>
+      {error && <p style={{color:"#ef4444",fontSize:12,marginBottom:8}}>{error}</p>}
+      <button onClick={handlePay} disabled={loading}
+        style={{width:"100%",background:"linear-gradient(135deg,#635bff,#4f46e5)",color:"#fff",border:"none",borderRadius:12,padding:14,fontSize:15,fontWeight:700,cursor:"pointer",opacity:loading?0.6:1}}>
+        {loading ? "⏳ Traitement..." : `💳 Autoriser ${amount}€`}
+      </button>
+      <div style={{fontSize:11,color:"#16a34a",textAlign:"center",marginTop:8,fontWeight:600}}>🔒 Paiement sécurisé — Stripe</div>
+    </div>
+  );
+}export default AppWrapper;
