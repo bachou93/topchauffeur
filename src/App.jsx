@@ -372,7 +372,23 @@ function AdminDashboard() {
     setLoading(false);
   }
 
-  async function updateStatus(id, status) {
+  async function updateStatus(id, status, paymentIntentId = null) {
+    // Si confirmation et paiement Stripe existe → capturer le paiement
+    if (status === "confirmed" && paymentIntentId) {
+      await fetch("/api/capture-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentIntentId })
+      });
+    }
+    // Si annulation et paiement Stripe existe → rembourser
+    if (status === "cancelled" && paymentIntentId) {
+      await fetch("/api/cancel-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentIntentId })
+      });
+    }
     await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
       method: "PATCH",
       headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", "Prefer": "return=minimal" },
@@ -380,19 +396,6 @@ function AdminDashboard() {
     });
     loadReservations();
   }
-
-  function login() {
-    if (pwd === ADMIN_PWD) { setLoggedIn(true); loadReservations(); }
-    else setError("❌ Mot de passe incorrect");
-  }
-
-  const filtered = filter === "all" ? reservations : reservations.filter(r => r.status === filter);
-  const total = reservations.length;
-  const pending = reservations.filter(r => r.status === "pending").length;
-  const confirmed = reservations.filter(r => r.status === "confirmed").length;
-  const revenue = reservations.filter(r => r.status === "confirmed").reduce((s, r) => s + (parseInt(r.price) || 0), 0);
-
-  const as = {
     page: { fontFamily: "'Georgia',serif", background: "#f7f4ef", minHeight: "100vh" },
     loginWrap: { display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"linear-gradient(135deg,#1a1a2e,#0f3460)" },
     loginCard: { background:"#fff", borderRadius:20, padding:"40px 32px", width:320, textAlign:"center", boxShadow:"0 8px 40px #0005" },
@@ -481,8 +484,8 @@ function AdminDashboard() {
             <div style={{display:"flex",gap:8}}>
               <a href={`tel:${r.phone}`} style={{background:"#1a1a2e",color:"#fff",border:"none",borderRadius:10,padding:"10px 14px",fontSize:13,fontWeight:700,cursor:"pointer",textDecoration:"none"}}>📞</a>
               {r.status==="pending" ? <>
-                <button onClick={() => updateStatus(r.id,"confirmed")} style={{flex:1,background:"#22c55e",color:"#fff",border:"none",borderRadius:10,padding:10,fontSize:13,fontWeight:700,cursor:"pointer"}}>✅ Confirmer</button>
-                <button onClick={() => updateStatus(r.id,"cancelled")} style={{flex:1,background:"#ef4444",color:"#fff",border:"none",borderRadius:10,padding:10,fontSize:13,fontWeight:700,cursor:"pointer"}}>❌ Annuler</button>
+<button onClick={() => updateStatus(r.id,"confirmed",r.payment_intent_id)} style={{flex:1,background:"#22c55e",color:"#fff",border:"none",borderRadius:10,padding:10,fontSize:13,fontWeight:700,cursor:"pointer"}}>✅ Confirmer</button>
+                <button onClick={() => updateStatus(r.id,"cancelled",r.payment_intent_id)} style={{flex:1,background:"#ef4444",color:"#fff",border:"none",borderRadius:10,padding:10,fontSize:13,fontWeight:700,cursor:"pointer"}}>❌ Annuler</button>
               </> : <button onClick={() => updateStatus(r.id,"pending")} style={{flex:1,background:"#888",color:"#fff",border:"none",borderRadius:10,padding:10,fontSize:13,fontWeight:700,cursor:"pointer"}}>↩ En attente</button>}
             </div>
           </div>
@@ -549,7 +552,7 @@ function App() {
   const fmt4   = v => v.replace(/\D/g,"").slice(0,16).replace(/(.{4})/g,"$1 ").trim();
   const fmtExp = v => v.replace(/\D/g,"").slice(0,4).replace(/^(\d{2})(\d)/,"$1/$2");
 
-  async function handleConfirm() {
+ async function handleConfirm(paymentIntentId = null) {
     const ref = "#TC" + Math.floor(Math.random() * 90000 + 10000);
     const reservationData = {
       from_address: from,
@@ -564,15 +567,13 @@ function App() {
       price: String(pricing?.price),
       note,
       status: "pending",
-      booking_ref: ref
+      booking_ref: ref,
+      payment_intent_id: paymentIntentId || null
     };
     await saveReservation(reservationData);
     await sendEmailNotification(reservationData);
     setConfirmed(true);
   }
-
-  function reset() {
-    setStep(1); setFrom(""); setTo(""); setDate(""); setTime("");
     setName(""); setPhone(""); setEmail("");
     setCardNum(""); setCardExp(""); setCardCvc("");
     setSelectedCrypto(null); setPricing(null); setConfirmed(false);
@@ -711,13 +712,13 @@ function App() {
           </div>
 
           {/* Card */}
-          {payMethod === "card" && (
+{payMethod === "card" && (
   <StripePaymentForm 
     amount={pricing?.price} 
     from={from} 
     to={to}
     onSuccess={(paymentIntentId) => {
-      setStripePaymentIntentId(paymentIntentId);
+      handleConfirm(paymentIntentId);
     }}
   />
 )}
