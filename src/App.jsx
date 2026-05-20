@@ -58,16 +58,24 @@ async function saveReservation(data) {
 
 async function getDistanceGoogle(from, to) {
   try {
-    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(from)}&destinations=${encodeURIComponent(to)}&mode=driving&language=fr&key=${GOOGLE_MAPS_KEY}`;
+    const geocode = async (address) => {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address + ", France")}&format=json&limit=1`;
+      const r = await fetch(url, { headers: { "Accept-Language": "fr", "User-Agent": "topchauffeur-app" } });
+      const data = await r.json();
+      if (data && data[0]) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+      return null;
+    };
+    const [coordFrom, coordTo] = await Promise.all([geocode(from), geocode(to)]);
+    if (!coordFrom || !coordTo) return 5;
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordFrom.lon},${coordFrom.lat};${coordTo.lon},${coordTo.lat}?overview=false`;
     const r = await fetch(url);
     const data = await r.json();
-    if (data.rows?.[0]?.elements?.[0]?.distance?.value) {
-      return Math.ceil(data.rows[0].elements[0].distance.value / 1000);
+    if (data.routes && data.routes[0]) {
+      return Math.ceil(data.routes[0].distance / 1000);
     }
     return 5;
   } catch { return 5; }
 }
-
 // ── AIRPORT DETECTION ──
 const ORLY = ["orly","aéroport d'orly","aeroport orly","paris orly","orly airport"];
 const CDG  = ["cdg","charles de gaulle","roissy","paris cdg","roissy cdg"];
@@ -586,7 +594,7 @@ function App() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  // Load Google Maps
+// Load Google Maps
   useEffect(() => {
     if (window.google) { setMapsLoaded(true); return; }
     const script = document.createElement("script");
@@ -595,7 +603,6 @@ function App() {
     script.onload = () => setMapsLoaded(true);
     document.head.appendChild(script);
   }, []);
-
   // Calculate price
   useEffect(() => {
     if (from.length < 5 || to.length < 5) { setPricing(null); return; }
@@ -693,29 +700,8 @@ function App() {
         {step === 1 && <>
           <h2 style={s.stepTitle}>{t.tripTitle}</h2>
 
-          {mapsLoaded ? (
-            <>
-              <AddressInput label={t.fromLabel} placeholder={t.fromPlaceholder} value={from} onChange={setFrom} />
-              <AddressInput label={t.toLabel} placeholder={t.toPlaceholder} value={to} onChange={setTo} />
-            </>
-          ) : (
-            <>
-              <Field label={t.fromLabel}><input style={s.input} placeholder={t.fromPlaceholder} value={from} onChange={e => setFrom(e.target.value)} /></Field>
-              <Field label={t.toLabel}><input style={s.input} placeholder={t.toPlaceholder} value={to} onChange={e => setTo(e.target.value)} /></Field>
-            </>
-          )}
-
-          {from.length >= 5 && to.length >= 5 && (
-            <div style={s.priceBox}>
-              {loadingPrice
-                ? <span style={s.loadingTxt}>{t.priceCalc}</span>
-                : pricing
-                  ? <><span style={s.priceLbl}>{pricing.label}</span><span style={s.priceAmt}>{pricing.price}€</span></>
-                  : <span style={s.loadingTxt}>{t.priceInvalid}</span>
-              }
-            </div>
-          )}
-
+<Field label={t.fromLabel}><input style={s.input} placeholder={t.fromPlaceholder} value={from} onChange={e => setFrom(e.target.value)} /></Field>
+          <Field label={t.toLabel}><input style={s.input} placeholder={t.toPlaceholder} value={to} onChange={e => setTo(e.target.value)} /></Field>
           <div style={s.row2}>
             <Field label={t.dateLabel} style={{ flex: 1 }}><input style={s.input} type="date" min={today} value={date} onChange={e => setDate(e.target.value)} /></Field>
             <Field label={t.timeLabel} style={{ flex: 1 }}>
