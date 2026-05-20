@@ -258,36 +258,59 @@ const timeSlots = Array.from({ length: 48 }, (_, i) => {
 
 // ── GOOGLE MAPS AUTOCOMPLETE ──
 function AddressInput({ label, placeholder, value, onChange }) {
-  const inputRef = useRef(null);
-  const autocompleteRef = useRef(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const timerRef = useRef(null);
 
-  useEffect(() => {
-    if (!window.google || !inputRef.current) return;
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
-      componentRestrictions: { country: "fr" },
-      fields: ["formatted_address", "geometry"],
-      types: ["geocode", "establishment"],
-    });
-    autocompleteRef.current.addListener("place_changed", () => {
-      const place = autocompleteRef.current.getPlace();
-      if (place.formatted_address) onChange(place.formatted_address);
-    });
-  }, []);
+  async function fetchSuggestions(query) {
+    if (query.length < 3) { setSuggestions([]); return; }
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ", France")}&format=json&limit=5&addressdetails=1`;
+      const r = await fetch(url, { headers: { "Accept-Language": "fr", "User-Agent": "topchauffeur-app" } });
+      const data = await r.json();
+      setSuggestions(data.map(d => d.display_name));
+    } catch { setSuggestions([]); }
+  }
+
+  function handleChange(e) {
+    onChange(e.target.value);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => fetchSuggestions(e.target.value), 400);
+    setShowSuggestions(true);
+  }
+
+  function handleSelect(s) {
+    onChange(s);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  }
 
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div style={{ marginBottom: 16, position: "relative" }}>
       <label style={s.label}>{label}</label>
       <input
-        ref={inputRef}
         style={s.input}
         type="text"
         placeholder={placeholder}
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={handleChange}
+        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+        onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
       />
+      {showSuggestions && suggestions.length > 0 && (
+        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1.5px solid #e0d8cc", borderRadius: 10, zIndex: 1000, boxShadow: "0 4px 16px #0002", maxHeight: 200, overflowY: "auto" }}>
+          {suggestions.map((s, i) => (
+            <div key={i} onMouseDown={() => handleSelect(s)}
+              style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", borderBottom: i < suggestions.length - 1 ? "1px solid #f0ece4" : "none", color: "#333" }}>
+              📍 {s}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
+
 
 // ── STRIPE PAYMENT FORM ──
 function StripePaymentForm({ amount, from, to, name, phone, date, time, onSuccess }) {
@@ -700,8 +723,8 @@ function App() {
         {step === 1 && <>
           <h2 style={s.stepTitle}>{t.tripTitle}</h2>
 
-<Field label={t.fromLabel}><input style={s.input} placeholder={t.fromPlaceholder} value={from} onChange={e => setFrom(e.target.value)} /></Field>
-          <Field label={t.toLabel}><input style={s.input} placeholder={t.toPlaceholder} value={to} onChange={e => setTo(e.target.value)} /></Field>
+<AddressInput label={t.fromLabel} placeholder={t.fromPlaceholder} value={from} onChange={setFrom} />
+          <AddressInput label={t.toLabel} placeholder={t.toPlaceholder} value={to} onChange={setTo} />
           <div style={s.row2}>
             <Field label={t.dateLabel} style={{ flex: 1 }}><input style={s.input} type="date" min={today} value={date} onChange={e => setDate(e.target.value)} /></Field>
             <Field label={t.timeLabel} style={{ flex: 1 }}>
