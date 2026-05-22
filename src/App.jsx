@@ -268,7 +268,11 @@ function AddressInput({ label, placeholder, value, onChange }) {
       const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ", France")}&format=json&limit=5&addressdetails=1`;
       const r = await fetch(url, { headers: { "Accept-Language": "fr", "User-Agent": "topchauffeur-app" } });
       const data = await r.json();
-      setSuggestions(data.map(d => d.display_name));
+      setSuggestions(data.map(d => {
+        const parts = d.display_name.split(", ");
+        const short = parts.slice(0, 4).join(", ");
+        return { label: short, full: d.display_name, lat: d.lat, lon: d.lon };
+      }));
     } catch { setSuggestions([]); }
   }
 
@@ -280,7 +284,7 @@ function AddressInput({ label, placeholder, value, onChange }) {
   }
 
   function handleSelect(s) {
-    onChange(s);
+    onChange(s.label);
     setSuggestions([]);
     setShowSuggestions(false);
   }
@@ -301,8 +305,8 @@ function AddressInput({ label, placeholder, value, onChange }) {
         <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1.5px solid #e0d8cc", borderRadius: 10, zIndex: 1000, boxShadow: "0 4px 16px #0002", maxHeight: 200, overflowY: "auto" }}>
           {suggestions.map((s, i) => (
             <div key={i} onMouseDown={() => handleSelect(s)}
-              style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", borderBottom: i < suggestions.length - 1 ? "1px solid #f0ece4" : "none", color: "#333" }}>
-              📍 {s}
+             style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", borderBottom: i < suggestions.length - 1 ? "1px solid #f0ece4" : "none", color: "#333" }}>
+              📍 {s.label}
             </div>
           ))}
         </div>
