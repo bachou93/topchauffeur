@@ -821,7 +821,7 @@ function App() {
               <p style={{ fontSize: 14, color: "#555", marginBottom: 16 }}>Cliquez pour payer via PayPal</p>
               <div style={{ fontSize: 22, fontWeight: 700, color: "#c9a96e", marginBottom: 16 }}>{pricing?.price}€</div>
               <a
-                href={`https://www.paypal.com/paypalme/bachiro/${pricing?.price}EUR`}
+href={`https://paypal.me/benamerbachir/${pricing?.price}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ display: "block", background: "#003087", color: "#fff", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: 700, textDecoration: "none" }}
