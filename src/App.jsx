@@ -257,7 +257,7 @@ const timeSlots = Array.from({ length: 48 }, (_, i) => {
 });
 
 // ── GOOGLE MAPS AUTOCOMPLETE ──
-function AddressInput({ label, placeholder, value, onChange }) {
+function AddressInput({ label, placeholder, value, onChange, onCoords }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const timerRef = useRef(null);
@@ -268,10 +268,15 @@ function AddressInput({ label, placeholder, value, onChange }) {
       const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ", France")}&format=json&limit=5&addressdetails=1`;
       const r = await fetch(url, { headers: { "Accept-Language": "fr", "User-Agent": "topchauffeur-app" } });
       const data = await r.json();
-      setSuggestions(data.map(d => {
-        const parts = d.display_name.split(", ");
-        const short = parts.slice(0, 4).join(", ");
-        return { label: short, full: d.display_name, lat: d.lat, lon: d.lon };
+setSuggestions(data.map(d => {
+        const a = d.address || {};
+        const parts = [
+          (a.house_number ? a.house_number + " " : "") + (a.road || a.pedestrian || ""),
+          a.city || a.town || a.village || a.municipality || "",
+          a.postcode || ""
+        ].filter(Boolean);
+        const label = parts.join(", ");
+        return { label: label || d.display_name.split(", ").slice(0,3).join(", "), lat: d.lat, lon: d.lon };
       }));
     } catch { setSuggestions([]); }
   }
@@ -284,11 +289,11 @@ function AddressInput({ label, placeholder, value, onChange }) {
   }
 
   function handleSelect(s) {
-    onChange(s.label);
+onChange(s.label);
+    if (onCoords) onCoords(s.lat, s.lon);
     setSuggestions([]);
     setShowSuggestions(false);
   }
-
   return (
     <div style={{ marginBottom: 16, position: "relative" }}>
       <label style={s.label}>{label}</label>
@@ -616,6 +621,8 @@ function App() {
   const [selectedCrypto, setSelectedCrypto] = useState(null);
   const [pricing, setPricing] = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(false);
+  const [fromCoords, setFromCoords] = useState(null);
+  const [toCoords, setToCoords] = useState(null);
   const [confirmed, setConfirmed] = useState(false);
   const [mapsLoaded, setMapsLoaded] = useState(false);
 
@@ -630,19 +637,29 @@ function App() {
     script.onload = () => setMapsLoaded(true);
     document.head.appendChild(script);
   }, []);
-  // Calculate price
+// Calculate price
   useEffect(() => {
     if (from.length < 5 || to.length < 5) { setPricing(null); return; }
     const fa = detectAirport(from), ta = detectAirport(to);
     if (fa || ta) { setPricing(calcPrice(from, to, 0, t, time)); return; }
     const timer = setTimeout(async () => {
       setLoadingPrice(true);
-      const km = await getDistanceGoogle(from, to);
+      let km = 5;
+      if (fromCoords && toCoords) {
+        try {
+          const url = `https://router.project-osrm.org/route/v1/driving/${fromCoords.lon},${fromCoords.lat};${toCoords.lon},${toCoords.lat}?overview=false`;
+          const r = await fetch(url);
+          const data = await r.json();
+          if (data.routes?.[0]) km = Math.ceil(data.routes[0].distance / 1000);
+        } catch {}
+      } else {
+        km = await getDistanceGoogle(from, to);
+      }
       setPricing(calcPrice(from, to, km, t, time));
       setLoadingPrice(false);
     }, 900);
     return () => clearTimeout(timer);
-  }, [from, to, lang, time]);
+  }, [from, to, lang, time, fromCoords, toCoords]);
 
   const canStep1 = from.trim().length >= 5 && to.trim().length >= 5 && date && time && pricing;
   const canStep2 = name.trim() && phone.trim() && email.trim();
@@ -727,8 +744,8 @@ function App() {
         {step === 1 && <>
           <h2 style={s.stepTitle}>{t.tripTitle}</h2>
 
-<AddressInput label={t.fromLabel} placeholder={t.fromPlaceholder} value={from} onChange={setFrom} />
-          <AddressInput label={t.toLabel} placeholder={t.toPlaceholder} value={to} onChange={setTo} />
+<AddressInput label={t.fromLabel} placeholder={t.fromPlaceholder} value={from} onChange={setFrom} onCoords={(lat, lon) => setFromCoords({lat, lon})} />
+          <AddressInput label={t.toLabel} placeholder={t.toPlaceholder} value={to} onChange={setTo} onCoords={(lat, lon) => setToCoords({lat, lon})} />
           <div style={s.row2}>
             <Field label={t.dateLabel} style={{ flex: 1 }}><input style={s.input} type="date" min={today} value={date} onChange={e => setDate(e.target.value)} /></Field>
             <Field label={t.timeLabel} style={{ flex: 1 }}>
