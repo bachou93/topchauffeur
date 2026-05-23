@@ -242,12 +242,10 @@ const LANGS = [
 ];
 
 const CRYPTOS = [
-  { id: "usdt", name: "USDT", full: "Tether (TRC-20)", color: "#26a17b", address: "TYourUSDTAddressHere123456789" },
-  { id: "usdc", name: "USDC", full: "USD Coin (ERC-20)", color: "#2775ca", address: "0xYourUSDCAddressHere123456" },
-  { id: "btc",  name: "BTC",  full: "Bitcoin",           color: "#f7931a", address: "bc1qYourBitcoinAddressHere" },
-  { id: "eth",  name: "ETH",  full: "Ethereum",          color: "#627eea", address: "0xYourETHAddressHere123456" },
-  { id: "sol",  name: "SOL",  full: "Solana",            color: "#9945ff", address: "YourSolanaAddressHere12345" },
-  { id: "xrp",  name: "XRP",  full: "Ripple",            color: "#00aae4", address: "rYourXRPAddressHere1234567" },
+  { id: "usdt", name: "USDT", full: "Tether (ERC-20)", color: "#26a17b", address: "0x6d6e661Cfe6F58FDF0C24f7B66fF0404575ED48D" },
+  { id: "usdc", name: "USDC", full: "USD Coin (ERC-20)", color: "#2775ca", address: "0x6d6e661Cfe6F58FDF0C24f7B66fF0404575ED48D" },
+  { id: "btc",  name: "BTC",  full: "Bitcoin", color: "#f7931a", address: "bc1qetpw3clxmkgapy5u8am4g0aalyzfkqsexz75hl" },
+  { id: "pi",   name: "PI",   full: "Pi Network", color: "#7b2d8b", address: "GCTPDHKLPRW6DB5C5X4BRYVEW3GHMW5PLV5FJEENVTFL3OJ6MOECNMFC" },
 ];
 
 const timeSlots = Array.from({ length: 48 }, (_, i) => {
@@ -663,7 +661,7 @@ function App() {
 
   const canStep1 = from.trim().length >= 5 && to.trim().length >= 5 && date && time && pricing;
   const canStep2 = name.trim() && phone.trim() && email.trim();
-  const canStep3 = payMethod === "cash" || payMethod === "card" || (payMethod === "crypto" && selectedCrypto);
+  const canStep3 = payMethod === "cash" || payMethod === "card" || payMethod === "paypal" || (payMethod === "crypto" && selectedCrypto);
 
   async function handleConfirm(paymentIntentId = null) {
     const ref = "#TC" + Math.floor(Math.random() * 90000 + 10000);
@@ -795,13 +793,13 @@ function App() {
           <h2 style={s.stepTitle}>{t.payTitle}</h2>
 
           <div style={s.payToggle}>
-            {["card", "cash", "crypto"].map(m => (
+{["card", "cash", "paypal", "crypto"].map(m => (
               <button key={m} style={{ ...s.payBtn, background: payMethod === m ? "#1a1a2e" : "#f0ece4", color: payMethod === m ? "#fff" : "#555" }}
                 onClick={() => setPayMethod(m)}>
-                {m === "card" ? t.payCard : m === "cash" ? t.payCash : t.payCrypto}
+                {m === "card" ? t.payCard : m === "cash" ? t.payCash : m === "paypal" ? "🅿️ PayPal" : t.payCrypto}
               </button>
             ))}
-          </div>
+          </div> 
 
           {payMethod === "card" && (
             <StripePaymentForm
@@ -816,8 +814,23 @@ function App() {
             />
           )}
 
-          {payMethod === "cash" && <div style={s.cashNote}>{t.cashNote}</div>}
-
+{payMethod === "cash" && <div style={s.cashNote}>{t.cashNote}</div>}
+          {payMethod === "paypal" && (
+            <div style={{ background: "#fdfaf6", border: "1.5px solid #e8d9c0", borderRadius: 12, padding: 20, marginBottom: 16, textAlign: "center" }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>🅿️</div>
+              <p style={{ fontSize: 14, color: "#555", marginBottom: 16 }}>Cliquez pour payer via PayPal</p>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "#c9a96e", marginBottom: 16 }}>{pricing?.price}€</div>
+              <a
+                href={`https://www.paypal.com/paypalme/bachiro/${pricing?.price}EUR`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: "block", background: "#003087", color: "#fff", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: 700, textDecoration: "none" }}
+              >
+                🅿️ Payer {pricing?.price}€ avec PayPal
+              </a>
+              <div style={{ fontSize: 11, color: "#16a34a", marginTop: 10, fontWeight: 600 }}>🔒 Paiement sécurisé — PayPal</div>
+            </div>
+          )}
           {payMethod === "crypto" && (
             <div>
               <p style={{ fontSize: 13, color: "#666", marginBottom: 14 }}>{t.cryptoNote}</p>
@@ -859,7 +872,7 @@ function App() {
             </div>
           </div>
 
-          {payMethod !== "card" && (
+{(payMethod !== "card") && (
             <div style={s.btnRow}>
               <button style={s.backBtn} onClick={() => setStep(2)}>{t.back}</button>
               <button style={{ ...s.confirmBtn, flex: 2, opacity: canStep3 ? 1 : 0.4 }} disabled={!canStep3} onClick={() => handleConfirm()}>
