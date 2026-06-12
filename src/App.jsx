@@ -450,7 +450,6 @@ function AdminDashboard() {
       setError("❌ Erreur de connexion");
     }
   }
-  }
 
   const filtered = filter === "all" ? reservations : reservations.filter(r => r.status === filter);
   const total = reservations.length;
@@ -551,8 +550,8 @@ function AdminDashboard() {
                 <button onClick={() => updateStatus(r.id, "confirmed", r.payment_intent_id)} style={{ flex: 1, background: "#22c55e", color: "#fff", border: "none", borderRadius: 10, padding: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✅ Confirmer</button>
                 <button onClick={() => updateStatus(r.id, "cancelled", r.payment_intent_id)} style={{ flex: 1, background: "#ef4444", color: "#fff", border: "none", borderRadius: 10, padding: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>❌ Annuler</button>
               </> : <button onClick={() => updateStatus(r.id, "pending")} style={{ flex: 1, background: "#888", color: "#fff", border: "none", borderRadius: 10, padding: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>↩ En attente</button>}
-            </div>
-          </div>
+</div>
+          </div>            
         ))}
       </div>
     </div>
