@@ -382,10 +382,17 @@ function AdminDashboard() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [pwd, setPwd] = useState("");
   const [error, setError] = useState("");
+ // ── ADMIN DASHBOARD ──
+function AdminDashboard() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [pwd, setPwd] = useState("");
+  const [error, setError] = useState("");
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("all");
-  const ADMIN_PWD = "topchauffeur2026";
+  const [sessionToken, setSessionToken] = useState(
+    () => sessionStorage.getItem("tc_admin_token") || null
+  );
 
   async function loadReservations() {
     setLoading(true);
@@ -396,6 +403,7 @@ function AdminDashboard() {
       setReservations(await r.json());
     } catch {}
     setLoading(false);
+  }
   }
 
   async function updateStatus(id, status, paymentIntentId = null) {
@@ -421,9 +429,27 @@ function AdminDashboard() {
     loadReservations();
   }
 
-  function login() {
-    if (pwd === ADMIN_PWD) { setLoggedIn(true); loadReservations(); }
-    else setError("❌ Mot de passe incorrect");
+ async function login() {
+    setError("");
+    try {
+      const res = await fetch("/api/admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pwd })
+      });
+      const data = await res.json();
+      if (data.success) {
+        sessionStorage.setItem("tc_admin_token", data.sessionToken);
+        setSessionToken(data.sessionToken);
+        setLoggedIn(true);
+        loadReservations();
+      } else {
+        setError("❌ Mot de passe incorrect");
+      }
+    } catch {
+      setError("❌ Erreur de connexion");
+    }
+  }
   }
 
   const filtered = filter === "all" ? reservations : reservations.filter(r => r.status === filter);
@@ -471,7 +497,7 @@ function AdminDashboard() {
             <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", letterSpacing: 1 }}>Tableau de bord</div>
           </div>
         </div>
-        <button onClick={() => setLoggedIn(false)} style={{ background: "#c9a96e22", border: "1px solid #c9a96e55", color: "#c9a96e", borderRadius: 20, padding: "6px 14px", fontSize: 12, cursor: "pointer" }}>
+<button onClick={() => { setLoggedIn(false); sessionStorage.removeItem("tc_admin_token"); setSessionToken(null); }} style={{ background: "#c9a96e22", border: "1px solid #c9a96e55", color: "#c9a96e", borderRadius: 20, padding: "6px 14px", fontSize: 12, cursor: "pointer" }}>
           🔒 Déconnexion
         </button>
       </div>
