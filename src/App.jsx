@@ -266,7 +266,7 @@ function AddressInput({ label, placeholder, value, onChange, onCoords }) {
       const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ", France")}&format=json&limit=5&addressdetails=1`;
       const r = await fetch(url, { headers: { "Accept-Language": "fr", "User-Agent": "topchauffeur-app" } });
       const data = await r.json();
-setSuggestions(data.map(d => {
+      setSuggestions(data.map(d => {
         const a = d.address || {};
         const parts = [
           (a.house_number ? a.house_number + " " : "") + (a.road || a.pedestrian || ""),
@@ -287,11 +287,12 @@ setSuggestions(data.map(d => {
   }
 
   function handleSelect(s) {
-onChange(s.label);
+    onChange(s.label);
     if (onCoords) onCoords(s.lat, s.lon);
     setSuggestions([]);
     setShowSuggestions(false);
   }
+
   return (
     <div style={{ marginBottom: 16, position: "relative" }}>
       <label style={s.label}>{label}</label>
@@ -308,7 +309,7 @@ onChange(s.label);
         <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1.5px solid #e0d8cc", borderRadius: 10, zIndex: 1000, boxShadow: "0 4px 16px #0002", maxHeight: 200, overflowY: "auto" }}>
           {suggestions.map((s, i) => (
             <div key={i} onMouseDown={() => handleSelect(s)}
-             style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", borderBottom: i < suggestions.length - 1 ? "1px solid #f0ece4" : "none", color: "#333" }}>
+              style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", borderBottom: i < suggestions.length - 1 ? "1px solid #f0ece4" : "none", color: "#333" }}>
               📍 {s.label}
             </div>
           ))}
@@ -317,7 +318,6 @@ onChange(s.label);
     </div>
   );
 }
-
 
 // ── STRIPE PAYMENT FORM ──
 function StripePaymentForm({ amount, from, to, name, phone, date, time, onSuccess }) {
@@ -403,7 +403,6 @@ function AdminDashboard() {
       setReservations(await r.json());
     } catch {}
     setLoading(false);
-  }
   }
 
   async function updateStatus(id, status, paymentIntentId = null) {
