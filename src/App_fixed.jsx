@@ -2,17 +2,14 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useState, useEffect, useRef } from "react";
 
-// ── CONFIG ──
 const SUPABASE_URL = "https://hhdlhwrlbgcbuuwkejph.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoZGxod3JsYmdjYnV1d2tlanBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MDczNjYsImV4cCI6MjA5Mzk4MzM2Nn0.4kPEUwd_BT-yOFx2U5y8c0hi-wMmyeo1-VUdPKWGp4Q";
 const EMAILJS_SERVICE_ID = "service_l5pda4q";
 const EMAILJS_TEMPLATE_ID = "template_gu3u9t7";
 const EMAILJS_PUBLIC_KEY = "zlP7wIHapHJJFBMQG";
-const GOOGLE_MAPS_KEY = "AIzaSyA5J7WzX14K1irSguN7uzzOzexZsKmnQ5s";
 const STRIPE_PK = "pk_live_51Hr8g0DPXgS2KWvvsF3XpDycIRspUcAdVNwrHNNhIQwKvu9B9uuu21GRe3es8ruk7LIGGLAIaWAxHKYE4aTl6GB700lZF9eilU";
 const stripePromise = loadStripe(STRIPE_PK);
 
-// ── HELPERS ──
 async function sendEmailNotification(data) {
   try {
     await fetch("https://api.emailjs.com/api/v1.0/email/send", {
@@ -70,13 +67,11 @@ async function getDistanceGoogle(from, to) {
     const url = `https://router.project-osrm.org/route/v1/driving/${coordFrom.lon},${coordFrom.lat};${coordTo.lon},${coordTo.lat}?overview=false`;
     const r = await fetch(url);
     const data = await r.json();
-    if (data.routes && data.routes[0]) {
-      return Math.ceil(data.routes[0].distance / 1000);
-    }
+    if (data.routes && data.routes[0]) return Math.ceil(data.routes[0].distance / 1000);
     return 5;
   } catch { return 5; }
 }
-// ── AIRPORT DETECTION ──
+
 const ORLY = ["orly","aéroport d'orly","aeroport orly","paris orly","orly airport"];
 const CDG  = ["cdg","charles de gaulle","roissy","paris cdg","roissy cdg"];
 const detectAirport = a => {
@@ -106,7 +101,6 @@ function calcPrice(from, to, km, t, timeStr) {
   return null;
 }
 
-// ── TRANSLATIONS ──
 const T = {
   fr: {
     brand: "Topchauffeur", brandSub: "VTC Premium · Paris & Île-de-France",
@@ -127,7 +121,6 @@ const T = {
     emailLabel: "✉️ Email", emailPlaceholder: "votre@email.com",
     payTitle: "Paiement",
     payCard: "💳 Carte bancaire", payCash: "💵 Espèces", payCrypto: "🪙 Crypto",
-    secureNote: "🔒 Paiement sécurisé — SSL 256 bits",
     cashNote: "💵 Règlement au chauffeur en fin de trajet. Un reçu vous sera remis.",
     cryptoNote: "Sélectionnez votre crypto-monnaie et scannez le QR code pour payer.",
     cryptoSelect: "Choisir la crypto-monnaie", cryptoAddress: "Adresse du portefeuille",
@@ -158,7 +151,6 @@ const T = {
     emailLabel: "✉️ Email", emailPlaceholder: "your@email.com",
     payTitle: "Payment",
     payCard: "💳 Bank card", payCash: "💵 Cash", payCrypto: "🪙 Crypto",
-    secureNote: "🔒 Secure payment — SSL 256-bit",
     cashNote: "💵 Pay the driver at the end of the trip. A receipt will be provided.",
     cryptoNote: "Select your cryptocurrency and scan the QR code to pay.",
     cryptoSelect: "Select cryptocurrency", cryptoAddress: "Wallet address",
@@ -189,7 +181,6 @@ const T = {
     emailLabel: "✉️ البريد الإلكتروني", emailPlaceholder: "example@email.com",
     payTitle: "الدفع",
     payCard: "💳 بطاقة بنكية", payCash: "💵 نقداً", payCrypto: "🪙 عملات رقمية",
-    secureNote: "🔒 دفع آمن — تشفير SSL 256",
     cashNote: "💵 الدفع للسائق مباشرة في نهاية الرحلة. ستحصل على إيصال.",
     cryptoNote: "اختر عملتك الرقمية وامسح رمز QR للدفع.",
     cryptoSelect: "اختر العملة الرقمية", cryptoAddress: "عنوان المحفظة",
@@ -220,7 +211,6 @@ const T = {
     emailLabel: "✉️ Email", emailPlaceholder: "su@email.com",
     payTitle: "Pago",
     payCard: "💳 Tarjeta bancaria", payCash: "💵 Efectivo", payCrypto: "🪙 Cripto",
-    secureNote: "🔒 Pago seguro — SSL 256 bits",
     cashNote: "💵 Pago al conductor al final del viaje. Se entregará recibo.",
     cryptoNote: "Seleccione su criptomoneda y escanee el QR para pagar.",
     cryptoSelect: "Seleccionar criptomoneda", cryptoAddress: "Dirección de billetera",
@@ -254,7 +244,6 @@ const timeSlots = Array.from({ length: 48 }, (_, i) => {
   return `${h}:${m}`;
 });
 
-// ── GOOGLE MAPS AUTOCOMPLETE ──
 function AddressInput({ label, placeholder, value, onChange, onCoords }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -319,7 +308,6 @@ function AddressInput({ label, placeholder, value, onChange, onCoords }) {
   );
 }
 
-// ── STRIPE PAYMENT FORM ──
 function StripePaymentForm({ amount, from, to, name, phone, date, time, onSuccess }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -377,12 +365,6 @@ function StripePaymentForm({ amount, from, to, name, phone, date, time, onSucces
   );
 }
 
-// ── ADMIN DASHBOARD ──
-function AdminDashboard() {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [pwd, setPwd] = useState("");
-  const [error, setError] = useState("");
- // ── ADMIN DASHBOARD ──
 function AdminDashboard() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [pwd, setPwd] = useState("");
@@ -428,7 +410,7 @@ function AdminDashboard() {
     loadReservations();
   }
 
- async function login() {
+  async function login() {
     setError("");
     try {
       const res = await fetch("/api/admin-login", {
@@ -495,7 +477,7 @@ function AdminDashboard() {
             <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", letterSpacing: 1 }}>Tableau de bord</div>
           </div>
         </div>
-<button onClick={() => { setLoggedIn(false); sessionStorage.removeItem("tc_admin_token"); setSessionToken(null); }} style={{ background: "#c9a96e22", border: "1px solid #c9a96e55", color: "#c9a96e", borderRadius: 20, padding: "6px 14px", fontSize: 12, cursor: "pointer" }}>
+        <button onClick={() => { setLoggedIn(false); sessionStorage.removeItem("tc_admin_token"); setSessionToken(null); }} style={{ background: "#c9a96e22", border: "1px solid #c9a96e55", color: "#c9a96e", borderRadius: 20, padding: "6px 14px", fontSize: 12, cursor: "pointer" }}>
           🔒 Déconnexion
         </button>
       </div>
@@ -549,15 +531,14 @@ function AdminDashboard() {
                 <button onClick={() => updateStatus(r.id, "confirmed", r.payment_intent_id)} style={{ flex: 1, background: "#22c55e", color: "#fff", border: "none", borderRadius: 10, padding: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>✅ Confirmer</button>
                 <button onClick={() => updateStatus(r.id, "cancelled", r.payment_intent_id)} style={{ flex: 1, background: "#ef4444", color: "#fff", border: "none", borderRadius: 10, padding: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>❌ Annuler</button>
               </> : <button onClick={() => updateStatus(r.id, "pending")} style={{ flex: 1, background: "#888", color: "#fff", border: "none", borderRadius: 10, padding: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>↩ En attente</button>}
-</div>
-          </div>            
+            </div>
+          </div>
         ))}
       </div>
     </div>
   );
 }
 
-// ── SUB COMPONENTS ──
 function SRow({ label, value }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#555", marginBottom: 7, gap: 8 }}>
@@ -621,7 +602,6 @@ function ContactFooter({ t }) {
   );
 }
 
-// ── MAIN APP ──
 function App() {
   if (window.location.pathname === "/admin") return <AdminDashboard />;
 
@@ -646,20 +626,9 @@ function App() {
   const [fromCoords, setFromCoords] = useState(null);
   const [toCoords, setToCoords] = useState(null);
   const [confirmed, setConfirmed] = useState(false);
-  const [mapsLoaded, setMapsLoaded] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
 
-// Load Google Maps
-  useEffect(() => {
-    if (window.google) { setMapsLoaded(true); return; }
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=places&language=fr`;
-    script.async = true;
-    script.onload = () => setMapsLoaded(true);
-    document.head.appendChild(script);
-  }, []);
-// Calculate price
   useEffect(() => {
     if (from.length < 5 || to.length < 5) { setPricing(null); return; }
     const fa = detectAirport(from), ta = detectAirport(to);
@@ -741,12 +710,10 @@ function App() {
   return (
     <div style={{ ...s.page, direction: dir }}>
       <Header t={t} lang={lang} setLang={setLang} />
-
       <div style={s.hero}>
         <h1 style={s.heroTitle}>{t.heroTitle}</h1>
         <p style={s.heroSub}>{t.heroSub}</p>
       </div>
-
       <div style={s.stepper}>
         {[t.step1, t.step2, t.step3].map((label, i) => (
           <div key={i} style={s.stepItem}>
@@ -761,13 +728,20 @@ function App() {
       </div>
 
       <div style={s.card}>
-
-        {/* STEP 1 */}
         {step === 1 && <>
           <h2 style={s.stepTitle}>{t.tripTitle}</h2>
-
-<AddressInput label={t.fromLabel} placeholder={t.fromPlaceholder} value={from} onChange={setFrom} onCoords={(lat, lon) => setFromCoords({lat, lon})} />
+          <AddressInput label={t.fromLabel} placeholder={t.fromPlaceholder} value={from} onChange={setFrom} onCoords={(lat, lon) => setFromCoords({lat, lon})} />
           <AddressInput label={t.toLabel} placeholder={t.toPlaceholder} value={to} onChange={setTo} onCoords={(lat, lon) => setToCoords({lat, lon})} />
+          {from.length >= 5 && to.length >= 5 && (
+            <div style={s.priceBox}>
+              {loadingPrice
+                ? <span style={s.loadingTxt}>{t.priceCalc}</span>
+                : pricing
+                  ? <><span style={s.priceLbl}>{pricing.label}</span><span style={s.priceAmt}>{pricing.price}€</span></>
+                  : <span style={s.loadingTxt}>{t.priceInvalid}</span>
+              }
+            </div>
+          )}
           <div style={s.row2}>
             <Field label={t.dateLabel} style={{ flex: 1 }}><input style={s.input} type="date" min={today} value={date} onChange={e => setDate(e.target.value)} /></Field>
             <Field label={t.timeLabel} style={{ flex: 1 }}>
@@ -777,7 +751,6 @@ function App() {
               </select>
             </Field>
           </div>
-
           <Field label={t.passLabel}>
             <div style={s.passRow}>
               <button style={s.passBtn} onClick={() => setPassengers(p => Math.max(1, p - 1))}>−</button>
@@ -786,15 +759,12 @@ function App() {
               <span style={s.passHint}>{t.passMax}</span>
             </div>
           </Field>
-
           <Field label={<>{t.noteLabel} <span style={s.opt}>{t.noteOpt}</span></>}>
             <textarea style={s.textarea} rows={2} placeholder={t.notePlaceholder} value={note} onChange={e => setNote(e.target.value)} />
           </Field>
-
           <button style={{ ...s.nextBtn, opacity: canStep1 ? 1 : 0.4 }} disabled={!canStep1} onClick={() => setStep(2)}>{t.continue}</button>
         </>}
 
-        {/* STEP 2 */}
         {step === 2 && <>
           <h2 style={s.stepTitle}>{t.coordTitle}</h2>
           <div style={s.badge}>
@@ -812,44 +782,27 @@ function App() {
           </div>
         </>}
 
-        {/* STEP 3 */}
         {step === 3 && <>
           <h2 style={s.stepTitle}>{t.payTitle}</h2>
-
           <div style={s.payToggle}>
-{["card", "cash", "paypal", "crypto"].map(m => (
+            {["card", "cash", "paypal", "crypto"].map(m => (
               <button key={m} style={{ ...s.payBtn, background: payMethod === m ? "#1a1a2e" : "#f0ece4", color: payMethod === m ? "#fff" : "#555" }}
                 onClick={() => setPayMethod(m)}>
                 {m === "card" ? t.payCard : m === "cash" ? t.payCash : m === "paypal" ? "🅿️ PayPal" : t.payCrypto}
               </button>
             ))}
-          </div> 
-
+          </div>
           {payMethod === "card" && (
-            <StripePaymentForm
-              amount={pricing?.price}
-              from={from}
-              to={to}
-              name={name}
-              phone={phone}
-              date={date}
-              time={time}
-              onSuccess={(paymentIntentId) => handleConfirm(paymentIntentId)}
-            />
+            <StripePaymentForm amount={pricing?.price} from={from} to={to} name={name} phone={phone} date={date} time={time} onSuccess={(paymentIntentId) => handleConfirm(paymentIntentId)} />
           )}
-
-{payMethod === "cash" && <div style={s.cashNote}>{t.cashNote}</div>}
+          {payMethod === "cash" && <div style={s.cashNote}>{t.cashNote}</div>}
           {payMethod === "paypal" && (
             <div style={{ background: "#fdfaf6", border: "1.5px solid #e8d9c0", borderRadius: 12, padding: 20, marginBottom: 16, textAlign: "center" }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>🅿️</div>
               <p style={{ fontSize: 14, color: "#555", marginBottom: 16 }}>Cliquez pour payer via PayPal</p>
               <div style={{ fontSize: 22, fontWeight: 700, color: "#c9a96e", marginBottom: 16 }}>{pricing?.price}€</div>
-              <a
-href={`https://paypal.me/benamerbachir/${pricing?.price}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ display: "block", background: "#003087", color: "#fff", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: 700, textDecoration: "none" }}
-              >
+              <a href={`https://paypal.me/benamerbachir/${pricing?.price}`} target="_blank" rel="noopener noreferrer"
+                style={{ display: "block", background: "#003087", color: "#fff", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: 700, textDecoration: "none" }}>
                 🅿️ Payer {pricing?.price}€ avec PayPal
               </a>
               <div style={{ fontSize: 11, color: "#16a34a", marginTop: 10, fontWeight: 600 }}>🔒 Paiement sécurisé — PayPal</div>
@@ -879,8 +832,6 @@ href={`https://paypal.me/benamerbachir/${pricing?.price}`}
               )}
             </div>
           )}
-
-          {/* Recap */}
           <div style={s.recap}>
             <div style={s.recapTitle}>{t.recap}</div>
             <SRow label="📍" value={from} />
@@ -895,8 +846,7 @@ href={`https://paypal.me/benamerbachir/${pricing?.price}`}
               <span style={s.totalAmt}>{pricing?.price}€</span>
             </div>
           </div>
-
-{(payMethod !== "card") && (
+          {payMethod !== "card" && (
             <div style={s.btnRow}>
               <button style={s.backBtn} onClick={() => setStep(2)}>{t.back}</button>
               <button style={{ ...s.confirmBtn, flex: 2, opacity: canStep3 ? 1 : 0.4 }} disabled={!canStep3} onClick={() => handleConfirm()}>
@@ -914,7 +864,6 @@ href={`https://paypal.me/benamerbachir/${pricing?.price}`}
   );
 }
 
-// ── STYLES ──
 const s = {
   page: { fontFamily: "'Georgia','Times New Roman',serif", background: "#f7f4ef", minHeight: "100vh" },
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", background: "#1a1a2e", flexWrap: "wrap", gap: 8 },
@@ -986,7 +935,6 @@ const s = {
   footerNote: { color: "#666", fontSize: 11, letterSpacing: 0.5 },
 };
 
-// ── WRAPPER ──
 function AppWrapper() {
   return (
     <Elements stripe={stripePromise}>
