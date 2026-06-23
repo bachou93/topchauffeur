@@ -1,13 +1,12 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "headers": [
     {
       "source": "/validation-key.txt",
-      "headers": [
-        { "key": "Content-Type", "value": "text/plain" }
-      ]
+      "destination": "/validation-key.txt"
+    },
+    {
+      "source": "/((?!validation-key.txt).*)",
+      "destination": "/index.html"
     }
   ]
 }
