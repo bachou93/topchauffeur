@@ -293,7 +293,12 @@ function AddressInput({ label, placeholder, value, onChange, onCoords }) {
         onChange={handleChange}
         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
         onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-      />
+      />      {value.length >= 5 && (
+        <div style={{ fontSize: 11, color: "#c9a96e", marginTop: 4, cursor: "pointer" }}
+          onMouseDown={() => { setShowSuggestions(false); }}>
+          ✅ Utiliser : "{value}"
+        </div>
+      )}
       {showSuggestions && suggestions.length > 0 && (
         <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1.5px solid #e0d8cc", borderRadius: 10, zIndex: 1000, boxShadow: "0 4px 16px #0002", maxHeight: 200, overflowY: "auto" }}>
           {suggestions.map((s, i) => (
