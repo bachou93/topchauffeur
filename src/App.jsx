@@ -93,7 +93,7 @@ function calcPrice(from, to, km, t, timeStr) {
   if (fa === "cdg"  || ta === "cdg")  return { price: 60, label: t.cdgLabel,  fixed: true };
   if (km > 0) {
     const night = isNightTime(timeStr);
-    const rate = night ? 2.5 : 2;
+    const rate = night ? 2 : 1.5;
     const tariffLabel = night ? "🌙 Tarif nuit (2,50€/km)" : "☀️ Tarif jour (2€/km)";
     const price = Math.round(10 + km * rate);
     return { price, label: `10€ + ${km} km × ${rate}€/km — ${tariffLabel}`, fixed: false, night };
