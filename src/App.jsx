@@ -120,11 +120,8 @@ const T = {
     phoneLabel: "📱 Téléphone", phonePlaceholder: "+33 6 00 00 00 00",
     emailLabel: "✉️ Email", emailPlaceholder: "votre@email.com",
     payTitle: "Paiement",
-    payCard: "💳 Carte bancaire", payCash: "💵 Espèces", payCrypto: "🪙 Crypto",
+    payCard: "💳 Carte bancaire", payCash: "💵 Espèces",
     cashNote: "💵 Règlement au chauffeur en fin de trajet. Un reçu vous sera remis.",
-    cryptoNote: "Sélectionnez votre crypto-monnaie et scannez le QR code pour payer.",
-    cryptoSelect: "Choisir la crypto-monnaie", cryptoAddress: "Adresse du portefeuille",
-    cryptoSend: "Envoyez exactement", cryptoConfirm: "Après paiement, envoyez le hash de transaction à votre chauffeur.",
     recap: "Récapitulatif", recapCalc: "🧮 Calcul", total: "💶 Total",
     confirm: "✅ Confirmer la réservation",
     successTitle: "Réservation Confirmée !", successSub: "Merci {name} ! Votre chauffeur vous contactera bientôt.",
@@ -150,11 +147,8 @@ const T = {
     phoneLabel: "📱 Phone", phonePlaceholder: "+33 6 00 00 00 00",
     emailLabel: "✉️ Email", emailPlaceholder: "your@email.com",
     payTitle: "Payment",
-    payCard: "💳 Bank card", payCash: "💵 Cash", payCrypto: "🪙 Crypto",
+    payCard: "💳 Bank card", payCash: "💵 Cash",
     cashNote: "💵 Pay the driver at the end of the trip. A receipt will be provided.",
-    cryptoNote: "Select your cryptocurrency and scan the QR code to pay.",
-    cryptoSelect: "Select cryptocurrency", cryptoAddress: "Wallet address",
-    cryptoSend: "Send exactly", cryptoConfirm: "After payment, send the transaction hash to your driver.",
     recap: "Summary", recapCalc: "🧮 Calculation", total: "💶 Total",
     confirm: "✅ Confirm booking",
     successTitle: "Booking Confirmed!", successSub: "Thank you {name}! Your driver will contact you soon.",
@@ -180,11 +174,8 @@ const T = {
     phoneLabel: "📱 رقم الهاتف", phonePlaceholder: "+33 6 00 00 00 00",
     emailLabel: "✉️ البريد الإلكتروني", emailPlaceholder: "example@email.com",
     payTitle: "الدفع",
-    payCard: "💳 بطاقة بنكية", payCash: "💵 نقداً", payCrypto: "🪙 عملات رقمية",
+    payCard: "💳 بطاقة بنكية", payCash: "💵 نقداً",
     cashNote: "💵 الدفع للسائق مباشرة في نهاية الرحلة. ستحصل على إيصال.",
-    cryptoNote: "اختر عملتك الرقمية وامسح رمز QR للدفع.",
-    cryptoSelect: "اختر العملة الرقمية", cryptoAddress: "عنوان المحفظة",
-    cryptoSend: "أرسل بالضبط", cryptoConfirm: "بعد الدفع، أرسل رقم العملية إلى السائق.",
     recap: "ملخص الحجز", recapCalc: "🧮 حساب السعر", total: "💶 المجموع",
     confirm: "✅ تأكيد الحجز",
     successTitle: "تم تأكيد الحجز!", successSub: "شكراً {name}! سيتصل بك السائق قريباً.",
@@ -210,11 +201,8 @@ const T = {
     phoneLabel: "📱 Teléfono", phonePlaceholder: "+33 6 00 00 00 00",
     emailLabel: "✉️ Email", emailPlaceholder: "su@email.com",
     payTitle: "Pago",
-    payCard: "💳 Tarjeta bancaria", payCash: "💵 Efectivo", payCrypto: "🪙 Cripto",
+    payCard: "💳 Tarjeta bancaria", payCash: "💵 Efectivo",
     cashNote: "💵 Pago al conductor al final del viaje. Se entregará recibo.",
-    cryptoNote: "Seleccione su criptomoneda y escanee el QR para pagar.",
-    cryptoSelect: "Seleccionar criptomoneda", cryptoAddress: "Dirección de billetera",
-    cryptoSend: "Envíe exactamente", cryptoConfirm: "Tras el pago, envíe el hash de transacción a su conductor.",
     recap: "Resumen", recapCalc: "🧮 Cálculo", total: "💶 Total",
     confirm: "✅ Confirmar reserva",
     successTitle: "¡Reserva Confirmada!", successSub: "¡Gracias {name}! Su conductor le contactará pronto.",
@@ -229,13 +217,6 @@ const LANGS = [
   { code: "en", label: "🇬🇧 EN" },
   { code: "ar", label: "🇸🇦 AR" },
   { code: "es", label: "🇪🇸 ES" },
-];
-
-const CRYPTOS = [
-  { id: "usdt", name: "USDT", full: "Tether (ERC-20)", color: "#26a17b", address: "0x6d6e661Cfe6F58FDF0C24f7B66fF0404575ED48D" },
-  { id: "usdc", name: "USDC", full: "USD Coin (ERC-20)", color: "#2775ca", address: "0x6d6e661Cfe6F58FDF0C24f7B66fF0404575ED48D" },
-  { id: "btc",  name: "BTC",  full: "Bitcoin", color: "#f7931a", address: "bc1qetpw3clxmkgapy5u8am4g0aalyzfkqsexz75hl" },
-  { id: "pi",   name: "PI",   full: "Pi Network", color: "#7b2d8b", address: "GCTPDHKLPRW6DB5C5X4BRYVEW3GHMW5PLV5FJEENVTFL3OJ6MOECNMFC" },
 ];
 
 const timeSlots = Array.from({ length: 48 }, (_, i) => {
@@ -625,7 +606,6 @@ function App() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [payMethod, setPayMethod] = useState("card");
-  const [selectedCrypto, setSelectedCrypto] = useState(null);
   const [pricing, setPricing] = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(false);
   const [fromCoords, setFromCoords] = useState(null);
@@ -659,14 +639,14 @@ function App() {
 
   const canStep1 = from.trim().length >= 5 && to.trim().length >= 5 && date && time && pricing;
   const canStep2 = name.trim() && phone.trim() && email.trim();
-  const canStep3 = payMethod === "cash" || payMethod === "card" || payMethod === "paypal" || (payMethod === "crypto" && selectedCrypto);
+  const canStep3 = payMethod === "cash" || payMethod === "card" || payMethod === "paypal";
 
   async function handleConfirm(paymentIntentId = null) {
     const ref = "#TC" + Math.floor(Math.random() * 90000 + 10000);
     const reservationData = {
       from_address: from, to_address: to, date, time,
       passengers: String(passengers), name, phone, email,
-      pay_method: payMethod === "crypto" ? selectedCrypto?.name : payMethod,
+      pay_method: payMethod,
       price: String(pricing?.price), note, status: "pending",
       booking_ref: ref, payment_intent_id: paymentIntentId || null
     };
@@ -678,7 +658,7 @@ function App() {
   function reset() {
     setStep(1); setFrom(""); setTo(""); setDate(""); setTime("");
     setName(""); setPhone(""); setEmail("");
-    setSelectedCrypto(null); setPricing(null); setConfirmed(false);
+    setPricing(null); setConfirmed(false);
   }
 
   const dir = isRtl ? "rtl" : "ltr";
@@ -699,7 +679,7 @@ function App() {
           <SRow label="🏁" value={to} />
           <SRow label="📅" value={`${date} · ${time}`} />
           <SRow label="👥" value={passengers} />
-          <SRow label="💳" value={payMethod === "card" ? t.payCard : payMethod === "cash" ? t.payCash : selectedCrypto?.name} />
+          <SRow label="💳" value={payMethod === "card" ? t.payCard : payMethod === "cash" ? t.payCash : "PayPal"} />
           <div style={s.totalRow}>
             <span style={s.totalLabel}>{t.total}</span>
             <span style={s.totalAmt}>{pricing?.price}€</span>
@@ -790,10 +770,10 @@ function App() {
         {step === 3 && <>
           <h2 style={s.stepTitle}>{t.payTitle}</h2>
           <div style={s.payToggle}>
-            {["card", "cash", "paypal", "crypto"].map(m => (
+            {["card", "cash", "paypal"].map(m => (
               <button key={m} style={{ ...s.payBtn, background: payMethod === m ? "#1a1a2e" : "#f0ece4", color: payMethod === m ? "#fff" : "#555" }}
                 onClick={() => setPayMethod(m)}>
-                {m === "card" ? t.payCard : m === "cash" ? t.payCash : m === "paypal" ? "🅿️ PayPal" : t.payCrypto}
+                {m === "card" ? t.payCard : m === "cash" ? t.payCash : "🅿️ PayPal"}
               </button>
             ))}
           </div>
@@ -811,30 +791,6 @@ function App() {
                 🅿️ Payer {pricing?.price}€ avec PayPal
               </a>
               <div style={{ fontSize: 11, color: "#16a34a", marginTop: 10, fontWeight: 600 }}>🔒 Paiement sécurisé — PayPal</div>
-            </div>
-          )}
-          {payMethod === "crypto" && (
-            <div>
-              <p style={{ fontSize: 13, color: "#666", marginBottom: 14 }}>{t.cryptoNote}</p>
-              <div style={s.cryptoGrid}>
-                {CRYPTOS.map(c => (
-                  <button key={c.id} onClick={() => setSelectedCrypto(c)}
-                    style={{ ...s.cryptoChip, border: selectedCrypto?.id === c.id ? `2px solid ${c.color}` : "2px solid #eee", background: selectedCrypto?.id === c.id ? c.color + "18" : "#fafafa" }}>
-                    <span style={{ ...s.cryptoDot, background: c.color }}></span>
-                    <span style={{ fontWeight: 700, fontSize: 13 }}>{c.name}</span>
-                    <span style={{ fontSize: 10, color: "#888" }}>{c.full}</span>
-                  </button>
-                ))}
-              </div>
-              {selectedCrypto && (
-                <div style={s.cryptoPayBox}>
-                  <div style={{ fontSize: 12, color: "#888", marginBottom: 4 }}>{t.cryptoSend}</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: selectedCrypto.color }}>{pricing?.price} {selectedCrypto.name}</div>
-                  <div style={{ fontSize: 11, color: "#888", marginTop: 8, marginBottom: 4 }}>{t.cryptoAddress}</div>
-                  <div style={{ fontSize: 11, fontFamily: "monospace", background: "#f0ece4", padding: "6px 10px", borderRadius: 8, wordBreak: "break-all" }}>{selectedCrypto.address}</div>
-                  <p style={{ fontSize: 11, color: "#888", marginTop: 12 }}>{t.cryptoConfirm}</p>
-                </div>
-              )}
             </div>
           )}
           <div style={s.recap}>
@@ -913,10 +869,6 @@ const s = {
   payToggle: { display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" },
   payBtn: { flex: 1, minWidth: 90, padding: "10px 6px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, transition: "all .2s" },
   cashNote: { background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: "14px", fontSize: 13, color: "#166534", marginBottom: 16 },
-  cryptoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 },
-  cryptoChip: { display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "10px 8px", borderRadius: 10, cursor: "pointer", transition: "all .2s" },
-  cryptoDot: { width: 10, height: 10, borderRadius: "50%" },
-  cryptoPayBox: { background: "#fdfaf6", border: "1.5px solid #e8d9c0", borderRadius: 12, padding: "16px", marginBottom: 16 },
   recap: { background: "#fdfaf6", border: "1px solid #e8d9c0", borderRadius: 12, padding: "16px", marginBottom: 16 },
   recapTitle: { fontWeight: 700, fontSize: 14, color: "#1a1a2e", marginBottom: 12 },
   recapDivider: { height: 1, background: "#e8d9c0", margin: "10px 0" },
