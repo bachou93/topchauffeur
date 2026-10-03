@@ -53,23 +53,84 @@ async function saveReservation(data) {
   } catch { return false; }
 }
 
-async function getDistanceGoogle(from, to) {
+const PARIS = { lat: 48.8566, lon: 2.3522 };
+
+// Recherche d'adresses : API Adresse (gouv.fr) pour les adresses exactes
+// + Photon (OpenStreetMap) pour les lieux (gares, hôtels, aéroports...)
+async function searchPlaces(query, signal) {
+  const q = query.trim();
+  if (q.length < 3) return [];
+
+  const banUrl = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=5&autocomplete=1&lat=${PARIS.lat}&lon=${PARIS.lon}`;
+  const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5&lat=${PARIS.lat}&lon=${PARIS.lon}`;
+
+  const [banRes, photonRes] = await Promise.allSettled([
+    fetch(banUrl, { signal }).then(r => r.json()),
+    fetch(photonUrl, { signal }).then(r => r.json()),
+  ]);
+
+  const ban = [];
+  if (banRes.status === "fulfilled") {
+    for (const f of banRes.value?.features || []) {
+      const c = f.geometry?.coordinates;
+      if (!c || !f.properties?.label) continue;
+      ban.push({ label: f.properties.label, lat: c[1], lon: c[0] });
+    }
+  }
+
+  const places = [];
+  if (photonRes.status === "fulfilled") {
+    for (const f of photonRes.value?.features || []) {
+      const p = f.properties || {};
+      const c = f.geometry?.coordinates;
+      if (!c) continue;
+      if (p.countrycode && p.countrycode !== "FR") continue;
+      const street = p.street ? (p.housenumber ? p.housenumber + " " : "") + p.street : "";
+      const city = p.city || p.town || p.village || "";
+      const parts = [
+        p.name && p.name !== p.street ? p.name : "",
+        street,
+        [p.postcode, city].filter(Boolean).join(" ")
+      ].filter(Boolean);
+      const label = parts.join(", ");
+      if (label) places.push({ label, lat: c[1], lon: c[0] });
+    }
+  }
+
+  // Adresse avec numéro -> adresses d'abord ; sinon lieux d'abord
+  const ordered = /^\d/.test(q) ? [...ban, ...places] : [...places, ...ban];
+  const seen = new Set();
+  return ordered.filter(r => {
+    const k = r.label.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).slice(0, 6);
+}
+
+async function geocodeAddress(address) {
   try {
-    const geocode = async (address) => {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address + ", France")}&format=json&limit=1`;
-      const r = await fetch(url, { headers: { "Accept-Language": "fr", "User-Agent": "topchauffeur-app" } });
-      const data = await r.json();
-      if (data && data[0]) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-      return null;
-    };
-    const [coordFrom, coordTo] = await Promise.all([geocode(from), geocode(to)]);
-    if (!coordFrom || !coordTo) return 5;
-    const url = `https://router.project-osrm.org/route/v1/driving/${coordFrom.lon},${coordFrom.lat};${coordTo.lon},${coordTo.lat}?overview=false`;
+    const results = await searchPlaces(address);
+    return results[0] || null;
+  } catch { return null; }
+}
+
+// Distance routière en km (OSRM, puis Valhalla en secours). Renvoie null si impossible.
+async function getRouteKm(a, b) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${a.lon},${a.lat};${b.lon},${b.lat}?overview=false`;
     const r = await fetch(url);
-    const data = await r.json();
-    if (data.routes && data.routes[0]) return Math.ceil(data.routes[0].distance / 1000);
-    return 5;
-  } catch { return 5; }
+    const d = await r.json();
+    if (d.routes && d.routes[0]) return Math.max(1, Math.ceil(d.routes[0].distance / 1000));
+  } catch {}
+  try {
+    const body = { locations: [{ lat: a.lat, lon: a.lon }, { lat: b.lat, lon: b.lon }], costing: "auto", units: "kilometers" };
+    const r = await fetch(`https://valhalla1.openstreetmap.de/route?json=${encodeURIComponent(JSON.stringify(body))}`);
+    const d = await r.json();
+    const len = d?.trip?.summary?.length;
+    if (len) return Math.max(1, Math.ceil(len));
+  } catch {}
+  return null;
 }
 
 const ORLY = ["orly","aéroport d'orly","aeroport orly","paris orly","orly airport"];
@@ -114,6 +175,7 @@ const T = {
     passLabel: "👥 Passagers", passMax: "max 4",
     noteLabel: "📝 Note", noteOpt: "(optionnel)", notePlaceholder: "Vol AF123, bagages, siège bébé...",
     priceCalc: "⏳ Calcul du prix...", priceInvalid: "Entrez des adresses valides pour voir le prix",
+    priceError: "Impossible de calculer l'itinéraire. Vérifiez les adresses ou appelez-nous au +33 6 35 20 92 28",
     continue: "Continuer →", back: "← Retour",
     coordTitle: "Vos coordonnées",
     nameLabel: "👤 Nom complet", namePlaceholder: "Prénom Nom",
@@ -141,6 +203,7 @@ const T = {
     passLabel: "👥 Passengers", passMax: "max 4",
     noteLabel: "📝 Note", noteOpt: "(optional)", notePlaceholder: "Flight AF123, luggage, baby seat...",
     priceCalc: "⏳ Calculating price...", priceInvalid: "Enter valid addresses to see the price",
+    priceError: "Couldn't calculate the route. Check the addresses or call us at +33 6 35 20 92 28",
     continue: "Continue →", back: "← Back",
     coordTitle: "Your details",
     nameLabel: "👤 Full name", namePlaceholder: "First Last",
@@ -168,6 +231,7 @@ const T = {
     passLabel: "👥 الركاب", passMax: "حد أقصى 4",
     noteLabel: "📝 ملاحظة", noteOpt: "(اختياري)", notePlaceholder: "رقم الرحلة AF123، أمتعة، مقعد أطفال...",
     priceCalc: "⏳ جاري حساب السعر...", priceInvalid: "أدخل عناوين صحيحة لمعرفة السعر",
+    priceError: "تعذر حساب المسار. تحقق من العناوين أو اتصل بنا على +33 6 35 20 92 28",
     continue: "متابعة ←", back: "→ رجوع",
     coordTitle: "بياناتك الشخصية",
     nameLabel: "👤 الاسم الكامل", namePlaceholder: "الاسم الأول واللقب",
@@ -195,6 +259,7 @@ const T = {
     passLabel: "👥 Pasajeros", passMax: "máx 4",
     noteLabel: "📝 Nota", noteOpt: "(opcional)", notePlaceholder: "Vuelo AF123, equipaje, silla de bebé...",
     priceCalc: "⏳ Calculando precio...", priceInvalid: "Ingrese direcciones válidas para ver el precio",
+    priceError: "No se pudo calcular la ruta. Compruebe las direcciones o llámenos al +33 6 35 20 92 28",
     continue: "Continuar →", back: "← Volver",
     coordTitle: "Sus datos",
     nameLabel: "👤 Nombre completo", namePlaceholder: "Nombre Apellido",
@@ -229,30 +294,26 @@ function AddressInput({ label, placeholder, value, onChange, onCoords }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const timerRef = useRef(null);
+  const abortRef = useRef(null);
 
   async function fetchSuggestions(query) {
-    if (query.length < 3) { setSuggestions([]); return; }
+    if (abortRef.current) abortRef.current.abort();
+    if (query.trim().length < 3) { setSuggestions([]); return; }
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ", France")}&format=json&limit=5&addressdetails=1`;
-      const r = await fetch(url, { headers: { "Accept-Language": "fr", "User-Agent": "topchauffeur-app" } });
-      const data = await r.json();
-      setSuggestions(data.map(d => {
-        const a = d.address || {};
-        const parts = [
-          (a.house_number ? a.house_number + " " : "") + (a.road || a.pedestrian || ""),
-          a.city || a.town || a.village || a.municipality || "",
-          a.postcode || ""
-        ].filter(Boolean);
-        const label = parts.join(", ");
-        return { label: label || d.display_name.split(", ").slice(0,3).join(", "), lat: d.lat, lon: d.lon };
-      }));
-    } catch { setSuggestions([]); }
+      const results = await searchPlaces(query, controller.signal);
+      if (controller.signal.aborted) return;
+      setSuggestions(results);
+    } catch { if (!controller.signal.aborted) setSuggestions([]); }
   }
 
   function handleChange(e) {
     onChange(e.target.value);
+    // L'adresse a été modifiée à la main : les anciennes coordonnées ne sont plus valables
+    if (onCoords) onCoords(null, null);
     clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => fetchSuggestions(e.target.value), 400);
+    timerRef.current = setTimeout(() => fetchSuggestions(e.target.value), 300);
     setShowSuggestions(true);
   }
 
@@ -608,6 +669,7 @@ function App() {
   const [payMethod, setPayMethod] = useState("card");
   const [pricing, setPricing] = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(false);
+  const [priceError, setPriceError] = useState(false);
   const [fromCoords, setFromCoords] = useState(null);
   const [toCoords, setToCoords] = useState(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -615,26 +677,28 @@ function App() {
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    if (from.length < 5 || to.length < 5) { setPricing(null); return; }
+    setPriceError(false);
+    if (from.length < 5 || to.length < 5) { setPricing(null); setLoadingPrice(false); return; }
     const fa = detectAirport(from), ta = detectAirport(to);
-    if (fa || ta) { setPricing(calcPrice(from, to, 0, t, time)); return; }
+    if (fa || ta) { setPricing(calcPrice(from, to, 0, t, time)); setLoadingPrice(false); return; }
+
+    let cancelled = false;
+    setPricing(null);
+    setLoadingPrice(true);
     const timer = setTimeout(async () => {
-      setLoadingPrice(true);
-      let km = 5;
-      if (fromCoords && toCoords) {
-        try {
-          const url = `https://router.project-osrm.org/route/v1/driving/${fromCoords.lon},${fromCoords.lat};${toCoords.lon},${toCoords.lat}?overview=false`;
-          const r = await fetch(url);
-          const data = await r.json();
-          if (data.routes?.[0]) km = Math.ceil(data.routes[0].distance / 1000);
-        } catch {}
+      const a = fromCoords || await geocodeAddress(from);
+      const b = toCoords || await geocodeAddress(to);
+      const km = a && b ? await getRouteKm(a, b) : null;
+      if (cancelled) return;
+      if (km == null) {
+        setPricing(null);
+        setPriceError(true);
       } else {
-        km = await getDistanceGoogle(from, to);
+        setPricing(calcPrice(from, to, km, t, time));
       }
-      setPricing(calcPrice(from, to, km, t, time));
       setLoadingPrice(false);
     }, 900);
-    return () => clearTimeout(timer);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [from, to, lang, time, fromCoords, toCoords]);
 
   const canStep1 = from.trim().length >= 5 && to.trim().length >= 5 && date && time && pricing;
@@ -715,15 +779,15 @@ function App() {
       <div style={s.card}>
         {step === 1 && <>
           <h2 style={s.stepTitle}>{t.tripTitle}</h2>
-          <AddressInput label={t.fromLabel} placeholder={t.fromPlaceholder} value={from} onChange={setFrom} onCoords={(lat, lon) => setFromCoords({lat, lon})} />
-          <AddressInput label={t.toLabel} placeholder={t.toPlaceholder} value={to} onChange={setTo} onCoords={(lat, lon) => setToCoords({lat, lon})} />
+          <AddressInput label={t.fromLabel} placeholder={t.fromPlaceholder} value={from} onChange={setFrom} onCoords={(lat, lon) => setFromCoords(lat == null ? null : { lat, lon })} />
+          <AddressInput label={t.toLabel} placeholder={t.toPlaceholder} value={to} onChange={setTo} onCoords={(lat, lon) => setToCoords(lat == null ? null : { lat, lon })} />
           {from.length >= 5 && to.length >= 5 && (
             <div style={s.priceBox}>
               {loadingPrice
                 ? <span style={s.loadingTxt}>{t.priceCalc}</span>
                 : pricing
                   ? <><span style={s.priceLbl}>{pricing.label}</span><span style={s.priceAmt}>{pricing.price}€</span></>
-                  : <span style={s.loadingTxt}>{t.priceInvalid}</span>
+                  : <span style={s.loadingTxt}>{priceError ? t.priceError : t.priceInvalid}</span>
               }
             </div>
           )}
