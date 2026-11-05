@@ -423,37 +423,49 @@ function AdminDashboard() {
     () => sessionStorage.getItem("tc_admin_token") || null
   );
 
-  async function loadReservations() {
+  const authHeaders = (token) => ({ "Content-Type": "application/json", "Authorization": `Bearer ${token}` });
+
+  function logout(message = "") {
+    setLoggedIn(false);
+    sessionStorage.removeItem("tc_admin_token");
+    setSessionToken(null);
+    setPwd("");
+    setError(message);
+  }
+
+  async function loadReservations(token = sessionToken) {
     setLoading(true);
     try {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/reservations?order=id.desc`, {
-        headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
-      });
-      setReservations(await r.json());
+      const r = await fetch("/api/admin-reservations", { headers: authHeaders(token) });
+      if (r.status === 401) { logout("⏱️ Session expirée, reconnectez-vous"); setLoading(false); return; }
+      const data = await r.json();
+      setReservations(Array.isArray(data) ? data : []);
     } catch {}
     setLoading(false);
   }
 
   async function updateStatus(id, status, paymentIntentId = null) {
+    const headers = authHeaders(sessionToken);
     if (status === "confirmed" && paymentIntentId) {
       await fetch("/api/capture-payment", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ paymentIntentId })
       });
     }
     if (status === "cancelled" && paymentIntentId) {
       await fetch("/api/cancel-payment", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ paymentIntentId })
       });
     }
-    await fetch(`${SUPABASE_URL}/rest/v1/reservations?id=eq.${id}`, {
+    const r = await fetch("/api/admin-reservations", {
       method: "PATCH",
-      headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", "Prefer": "return=minimal" },
-      body: JSON.stringify({ status })
+      headers,
+      body: JSON.stringify({ id, status })
     });
+    if (r.status === 401) { logout("⏱️ Session expirée, reconnectez-vous"); return; }
     loadReservations();
   }
 
@@ -470,7 +482,7 @@ function AdminDashboard() {
         sessionStorage.setItem("tc_admin_token", data.sessionToken);
         setSessionToken(data.sessionToken);
         setLoggedIn(true);
-        loadReservations();
+        loadReservations(data.sessionToken);
       } else {
         setError("❌ Mot de passe incorrect");
       }
@@ -539,7 +551,7 @@ function AdminDashboard() {
         ))}
       </div>
 
-      <button onClick={loadReservations} style={{ display: "block", margin: "0 16px 12px", background: "#f0ece4", border: "none", borderRadius: 10, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer", width: "calc(100% - 32px)" }}>
+      <button onClick={() => loadReservations()} style={{ display: "block", margin: "0 16px 12px", background: "#f0ece4", border: "none", borderRadius: 10, padding: 10, fontSize: 13, fontWeight: 600, cursor: "pointer", width: "calc(100% - 32px)" }}>
         🔄 Actualiser
       </button>
 
